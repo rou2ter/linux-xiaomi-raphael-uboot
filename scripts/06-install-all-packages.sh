@@ -69,30 +69,19 @@ fi
 
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] [06]   └─ 开始安装（这可能需要几分钟...）"
 chroot rootdir apt-get install -y $ALL_PACKAGES
-# ==================== THÊM KALI / NETHUNTER TOOLS ====================
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] [06]   └─ Thêm Kali/NetHunter repositories và packages..."
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] [06]   └─ Cài proot-distro để chạy Kali NetHunter..."
 
-# Thêm Kali repository (tương thích với Debian trixie / Ubuntu)
-cat >> rootdir/etc/apt/sources.list << EOF
+chroot rootdir apt-get install -y proot-distro
 
-# Kali Repository (rolling)
-deb http://http.kali.org/kali kali-rolling main non-free contrib
+# Tạo script tiện lợi
+cat > rootdir/usr/local/bin/setup-kali << 'EOF'
+#!/bin/bash
+echo "Đang cài Kali NetHunter vào proot..."
+proot-distro install kali
+proot-distro login kali -- apt update && apt install -y kali-linux-headless metasploit-framework bettercap aircrack-ng
+echo "Hoàn tất! Dùng lệnh: proot-distro login kali"
 EOF
-
-# Thêm key Kali
-chroot rootdir apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ED444FF07D8D0BF6 || true
-chroot rootdir wget -qO /etc/apt/trusted.gpg.d/kali-archive-keyring.gpg https://archive.kali.org/archive-keyring.gpg || true
-
-chroot rootdir apt-get update
-
-# Cài các công cụ NetHunter / Kali phổ biến
-KALI_TOOLS="kali-tools-top10 kali-linux-headless metasploit-framework nmap sqlmap hydra aircrack-ng bettercap wireshark tshark tcpdump reaver fern-wifi-cracker hostapd-mana wifiphisher"
-
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] [06]   └─ Cài Kali tools: $KALI_TOOLS"
-chroot rootdir apt-get install -y $KALI_TOOLS || echo "Một số gói có thể không cài được, tiếp tục..."
-
-# Cài thêm proot-distro để chạy Kali chroot dễ dàng
-chroot rootdir apt-get install -y proot-distro || true
+chmod +x rootdir/usr/local/bin/setup-kali
 
 if [[ "$SYSTEM_TYPE" == *"debian-"* ]]; then
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] [06]   └─ 修复 Debian dpkg 错误"
